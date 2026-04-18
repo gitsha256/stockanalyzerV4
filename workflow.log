@@ -1,0 +1,12 @@
+2025-08-21 13:57:00,669 [WARNING] Failed to fetch data for 21-08-2025:  Data not found, change the trade_date...
+2025-08-21 13:57:00,669 [WARNING] No valid data fetched for 21-08-2025
+2025-08-21 13:57:00,669 [ERROR] No data fetched
+2025-08-21 13:57:00,669 [WARNING] No new data fetched
+2026-04-16 09:05:13,615 [WARNING] Failed to fetch data for 16-04-2026:  Data not found, change the trade_date...
+2026-04-16 09:05:13,631 [WARNING] No valid data fetched for 16-04-2026
+2026-04-16 09:05:17,074 [WARNING] Symbol NAM has no data after standardization
+2026-04-18 08:05:29,909 [WARNING] Symbol LTIM has no data after standardization
+2026-04-18 08:05:29,925 [WARNING] Symbol NAM has no data after standardization
+2026-04-18 08:05:29,940 [WARNING] Symbol PEL has no data after standardization
+2026-04-18 08:05:30,026 [WARNING] Symbol SWANENERGY has no data after standardization
+2026-04-18 08:05:30,038 [WARNING] Symbol TATAMOTORS has no data after standardization
