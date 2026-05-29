@@ -3,7 +3,7 @@ import glob
 import os
 
 # Find the latest file matching the pattern
-files = glob.glob("*-*-25snapshot.csv")
+files = glob.glob("*-*-25snapshot_all.csv")
 if not files:
     print("No snapshot file found matching pattern *-*-25snapshot.csv")
     exit(1)
@@ -19,6 +19,8 @@ df = df.dropna(subset=sma_cols)
 
 def all_near(row):
     sma200 = row['s200']
+    if sma200 == 0:
+        return False
     return (
         abs(row['s020'] - sma200) / sma200 <= threshold and
         abs(row['s050'] - sma200) / sma200 <= threshold and

@@ -226,3 +226,7 @@
 2026-05-27 12:30:38,547 [ERROR] Error analyzing symbol KIRLFER: index 14 is out of bounds for axis 0 with size 14
 2026-05-27 12:31:03,467 [ERROR] Error analyzing symbol NOVARTIND: index 14 is out of bounds for axis 0 with size 14
 2026-05-27 12:31:39,117 [ERROR] Error analyzing symbol SICAGEN: index 14 is out of bounds for axis 0 with size 14
+2026-05-29 10:26:55,794 [WARNING] Symbol AEGISCHEM has insufficient data: 9 rows
+2026-05-29 10:26:55,870 [WARNING] Symbol EASTSILK has insufficient data: 7 rows
+2026-05-29 10:26:55,991 [WARNING] Symbol FRETAIL has insufficient data: 18 rows
+2026-05-29 10:26:56,054 [WARNING] Symbol MCDOWELL-N has insufficient data: 9 rows
