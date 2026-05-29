@@ -1,0 +1,21 @@
+symb,clos,chan,rvol,arnk,ascr,rsi,adx,tren,tstr,vola,zone,delt,bbup,bbsq,mpat,pcon,sect,score,screener_type,wrsi,ws30,DlPer,xpat
+FINCABLES,1177.25,7.5,2.69,107.0,232.16,71.92,38.15,Uptrend,Strong,49.09,Premium,0.64,True,False,Long-term Rounding Bottom,82,"Machinery, Equipment & Components",218.69,Intraday,,,,
+IFCI,68.38,5.93,3.3,46.0,607.65,68.91,25.11,Uptrend,Strong,46.08,Near Discount,5.24,True,False,Rising Wedge,92,Banking Services,217.68,Intraday,,,,
+BSE,4248.4,-4.25,1.01,7.0,1840.57,69.31,59.71,Uptrend,Strong,29.72,Near Premium,4.46,False,False,No Clear Pattern,0,Investment Banking & Investment Services,203.06,Intraday,,,,
+THERMAX,4590.6,2.47,1.4,84.0,283.15,63.94,54.16,Uptrend,Strong,51.16,Premium,5.93,False,False,Broadening Formation,68,"Machinery, Equipment & Components",202.46,Intraday,,,,
+APARINDS,13426.0,7.0,2.3,76.0,324.72,66.27,34.38,Uptrend,Strong,42.27,Premium,1.13,True,False,Broadening Formation,75,"Machinery, Equipment & Components",202.14,Intraday,,,,
+MOTHERSON,142.41,4.71,2.05,36.0,713.23,70.78,30.89,Uptrend,Strong,38.55,Premium,2.92,True,False,Broadening Formation,75,Automobiles & Auto Parts,196.83,Intraday,,,,
+WELCORP,1372.9,4.09,1.38,147.0,167.68,68.66,50.58,Uptrend,Strong,35.89,Premium,0.51,False,False,Triple Top,90,Metals & Mining,196.34,Intraday,,,,
+SIEMENS,3878.7,8.66,3.25,38.0,674.42,60.98,23.12,Sideways,Moderate,41.78,Premium,1.31,False,False,Ascending Channel,77,"Machinery, Equipment & Components",189.0,Intraday,,,,
+FACT,923.4,1.41,3.73,240.0,68.55,64.37,20.46,Sideways,Moderate,20.96,Near Premium,16.96,False,False,Broadening Formation,72,Chemicals,187.34,Intraday,,,,
+PEL,1124.2,-0.43,4.04,102.0,241.54,48.35,22.51,Sideways,Moderate,35.4,Near Premium,17.05,False,False,Inverse Head and Shoulders,92,Banking Services,186.4,Intraday,,,,
+SOLARINDS,18653.0,1.24,,,,,53.56,,Strong,31.66,Premium,0.78,,,Double Bottom,82,Chemicals,213.87,Swing,73.92,13967.37,53.71,Broadening Formation(68)
+ZYDUSLIFE,1085.8,0.67,,,,,45.93,,Strong,30.79,Premium,0.72,,,Triple Bottom,86,Pharmaceuticals,210.17,Swing,70.44,924.5,73.27,
+THERMAX,4590.6,2.47,,,,,54.16,,Strong,51.16,Premium,5.93,,,Broadening Formation,68,"Machinery, Equipment & Components",204.51,Swing,74.99,3354.79,37.09,
+GLAND,2313.0,-0.48,,,,,43.83,,Strong,61.91,Premium,3.46,,,Triple Top,90,Pharmaceuticals,200.9,Swing,72.16,1789.39,54.02,Broadening Formation(68)
+PNBHOUSING,1077.9,-1.38,,,,,42.52,,Strong,23.61,Near Premium,5.6,,,Broadening Formation,68,Banking Services,196.99,Swing,66.52,910.56,55.71,
+VIJAYA,1261.4,0.57,,,,,55.5,,Strong,41.91,Near Premium,8.55,,,Flag Pattern (Bear Flag),84,Healthcare Providers & Services,196.71,Swing,66.07,1031.55,44.96,Broadening Formation(68)
+NAVINFLUOR,7244.5,-2.1,,,,,43.26,,Strong,25.46,Premium,3.73,,,Cup and Handle,83,Chemicals,196.6,Swing,69.8,6248.57,53.56,
+LLOYDSME,1858.8,-0.59,,,,,38.3,,Strong,29.72,Premium,1.58,,,Diamond Bottom,76,Metals & Mining,195.14,Swing,74.88,1366.96,50.17,Long-term Rounding Bottom(75)
+POLYCAB,9664.0,0.53,,,,,41.99,,Strong,30.39,Premium,0.33,,,Cup and Handle,83,"Machinery, Equipment & Components",194.87,Swing,70.1,7793.43,39.41,Broadening Formation(68)
+MCX,3158.5,-4.63,,,,,42.54,,Strong,34.62,Near Premium,9.24,,,Flag Pattern (Bull Flag),80,Investment Banking & Investment Services,194.18,Swing,69.16,2465.35,46.31,Broadening Formation(68)

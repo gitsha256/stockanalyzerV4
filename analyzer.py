@@ -22,11 +22,11 @@ CONFIG = {
     'SPLITS_LOG_FILE': 'detected_splits.csv',
     'ANALYSIS_OUTPUT_FILE': 'snapshot.csv',
     'MAX_WORKERS': 6,
-    'DEFAULT_LOOKBACK_DAYS': 252,
+    'DEFAULT_LOOKBACK_DAYS': 756,  # 3 years to support weekly SMA/long-term patterns
     'FETCH_INTERVAL': 'D',
     'REQUIRED_COLUMNS': ['datetime', 'open', 'high', 'low', 'close', 'volume', 'symbols'],
     # Chart patterns: expanded to last 4 calendar months for better structural clarity.
-    'PATTERN_MAX_AGE_DAYS': 124,
+    'PATTERN_MAX_AGE_DAYS': 252,  # Look back 1 year for major structures
     'PATTERN_MIN_BARS_IN_WINDOW': 70,
     # Weekly pivot spacing (bars) — avoids triple bottom from 3 lows in one week.
     'PATTERN_WEEKLY_PIVOT_ORDER': 2,
@@ -1019,6 +1019,27 @@ def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_pa
         data['VOLUME_SPIKE'] = data['RELATIVE_VOLUME'] > 2
         data['ACTIVITY_SCORE'] = data['close'] * data['volume'] / 1e7
 
+        # --- WEEKLY ANALYSIS FOR SWING TRADING ---
+        weekly_df = data.resample('W-FRI', on='datetime').agg({
+            'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'
+        }).dropna()
+        
+        w_rsi = RSIIndicator(weekly_df['close'], window=14).rsi().iloc[-1] if len(weekly_df) >= 14 else np.nan
+        w_sma30 = weekly_df['close'].rolling(window=30).mean().iloc[-1] if len(weekly_df) >= 30 else np.nan
+        w_sma30_prev = weekly_df['close'].rolling(window=30).mean().iloc[-5] if len(weekly_df) >= 35 else np.nan
+        
+        # Stage Analysis (Weinstein Method)
+        w_close = weekly_df['close'].iloc[-1]
+        if pd.notna(w_sma30) and pd.notna(w_sma30_prev):
+            if w_close > w_sma30 and w_sma30 > w_sma30_prev:
+                swing_stage = "Stage 2 (Uptrend)"
+            elif w_close < w_sma30 and w_sma30 < w_sma30_prev:
+                swing_stage = "Stage 4 (Downtrend)"
+            else:
+                swing_stage = "Stage 1/3 (Neutral)"
+        else:
+            swing_stage = "Unknown"
+
         latest = data.iloc[-1]
         close = latest['close']
         swing_high = data[data['SWING_HIGH'] == 1]['close'].iloc[-1] if not data[data['SWING_HIGH'] == 1].empty else np.nan
@@ -1115,6 +1136,7 @@ def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_pa
             'VOLATILITY_%': round(volatility, 2), 'S_HIGH': round(swing_high, 2),
             'S_LOW': round(swing_low, 2), 'high': round(latest['high'], 2), 'low': round(latest['low'], 2),
             'EQB': round(midpoint, 2),
+            'W_RSI': round(w_rsi, 2), 'W_SMA30': round(w_sma30, 2), 'STAGE': swing_stage,
             'RELATIVE_VOLUME': round(latest['RELATIVE_VOLUME'], 2), 'VOLUME_SPIKE': latest['VOLUME_SPIKE'],
             'ACTIVITY_SCORE': round(latest['ACTIVITY_SCORE'], 2), 'SMA20': round(latest['SMA_20'], 2),
             'SMA50': round(latest['SMA_50'], 2), 'SMA100': round(latest['SMA_100'], 2),
@@ -1184,7 +1206,8 @@ def perform_technical_analysis(df_input, sector_df, logger, enable_candle_patter
             'open': 'open', 'BB_BREAKOUT_DOWN': 'bbdn', 'BB_SQUEEZE': 'bbsq', 'S_HIGH': 'shgh', 'S_LOW': 'slw',
             'high': 'high', 'low': 'low', 'EQB': 'eqb', 'SMA20': 's020', 'SMA50': 's050', 'SMA100': 's100',
             'SMA_200': 's200', '52HIGH': 'h52h', '52LOW': 'l52l', 'VOLUME_RANK': 'vrnk', 'RELATIVE_VOLUME_RANK': 'rrnk',
-            'TREND': 'tren', 'TREND_STRENGTH': 'tstr', 'VOLATILITY_%': 'vola',
+            'TREND': 'tren', 'TREND_STRENGTH': 'tstr', 'VOLATILITY_%': 'vola', 
+            'W_RSI': 'wrsi', 'W_SMA30': 'ws30', 'STAGE': 'stge',
             'PATTERN': 'patt', 'MAIN_PATTERN': 'mpat', 'MISC_PATTERNS': 'xpat', 'PATTERN_CONFIDENCE': 'pcon',
             'PATTERN_POINTS': 'ppnt', 'PATTERN_START': 'psta', 'PATTERN_END': 'pend',
             'SECTOR': 'sect'
@@ -1192,7 +1215,7 @@ def perform_technical_analysis(df_input, sector_df, logger, enable_candle_patter
         analysis_df.rename(columns={k: v for k, v in col_map.items() if k in analysis_df.columns}, inplace=True)
         
         desired_order = [
-            'date','symb','clos','volu','DlPer','rvol','vspk','ascr','arnk','chan','g200','zone','rsi','delt','cand','bbup','vtrd','bbbw','bbsq',
+            'date','symb','clos','stge','wrsi','ws30','volu','DlPer','rvol','vspk','ascr','arnk','chan','g200','zone','rsi','delt','cand','bbup','vtrd','bbbw','bbsq',
             'mcdl','g050','g020','adx','open','bbdn','shgh','slw','high','low','eqb','s020','s050','s100','s200','h52h','l52l','vrnk','rrnk',
             'tren','tstr','vola','mpat','pcon','psta','pend','ppnt','xpat','patt','obv','sect'
         ]
@@ -1279,15 +1302,18 @@ def main():
                 tasks = []
                 to_date = datetime.now()
                 logger.info(f"Checking for updates up to {to_date.strftime('%d-%m-%Y')}")
+                min_from_date = to_date
                 for symbol in symbols:
                     last_date = existing[existing['symbols'] == symbol]['datetime'].max()
                     from_date = last_date + timedelta(days=1) if pd.notna(last_date) else to_date - timedelta(days=CONFIG['DEFAULT_LOOKBACK_DAYS'])
                     if from_date.date() <= to_date.date():
                         tasks.append(symbol)
+                        if from_date < min_from_date:
+                            min_from_date = from_date
                         logger.info(f"Symbol {symbol} needs update from {from_date.strftime('%d-%m-%Y')}")
                 if tasks:
                     logger.info(f"Fetching new data for {len(tasks)} symbols")
-                    new_data = fetch_data(tasks, from_date, to_date, logger)
+                    new_data = fetch_data(tasks, min_from_date, to_date, logger)
                     if not new_data.empty:
                         new_data = new_data.dropna(subset=['open', 'high', 'low', 'close', 'volume'])
                         if new_data.empty:
