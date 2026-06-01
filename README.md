@@ -8,6 +8,7 @@ pip install -r requirements.txt
 | Script | Description |
 | :--- | :--- |
 | `analyzer.py` | The main engine. Fetches data from `symbols.csv`, handles stock splits, and generates technical snapshots. |
+| `formatter.py` | Converts CSV snapshots to color-coded Excel (.xlsx) files with directional highlighting. |
 | `analyzerall.py` | Full-market version of the analyzer. Processes a larger set of symbols from `symbolsall.csv`. |
 | `screen_stocks.py` | A heavy-duty ranking tool that reads snapshots and produces a scored list of Intraday and Swing picks. |
 | `sma_filter.py` | A utility to find stocks where multiple Simple Moving Averages (20, 50, 100, 200) are converging (confluence). |
@@ -153,10 +154,33 @@ Column schema (key columns):
     ```
 2.  **SMA Filter**: Run `sma_filter.py` to find "Tightening" setups where multiple SMAs are converging.
 
+### 🟢 Excel Formatting (`formatter.py`)
+The formatter is designed to turn raw CSV data into a visually intuitive heat-map of market signals. It processes the snapshot files and applies conditional formatting based on technical consensus.
+
+**Usage:**
+1. **Manual**: `python formatter.py path/to/your_snapshot.csv`
+2. **Automatic**: `python formatter.py` (It will auto-detect the latest `*snapshot.csv` in your directory).
+
+**Key Features:**
+- **Automated Logic**:
+    - **Booleans**: Automatically highlights signals like `bbup` (Bollinger Breakout) or `vspk` (Volume Spike).
+    - **Trend Alignment**: Color codes `tren` (Direction) and `tstr` (Strength) to help you spot strong uptrends instantly.
+    - **Range Analysis**: Validates `rsi`, `wrsi`, and `Stochastics` against ideal entry/exit zones.
+    - **Contrarian Highlighting**: Specifically flags `zone` (Discount/Premium) and `delt` (52W High distance) to identify mean-reversion or breakout setups.
+- **Multi-Sheet Architecture**:
+    - **Main Analysis**: The primary dashboard with frozen headers and auto-adjusted column widths.
+    - **Chart Patterns**: Separates verbose pattern data (`psta`, `pend`, `ppnt`) to keep the main view clean.
+    - **Legend**: Includes an embedded guide explaining every color rule and condition.
+
+**Visual Standards:**
+- **Light Green (#C6EFCE)**: Bullish / Signal Active.
+- **Light Red (#FFC7CE)**: Bearish / Signal Inactive.
+- **Dark Fills with White Text**: Highlights extreme conditions (e.g., very close to or far from 52W Highs).
+
 ## 📋 Requirements
 
 - Python 3.12+
-- `pandas`, `numpy`, `nselib`, `pandas-ta`, `scipy`, `plotly`, `streamlit`, `yfinance`, `requests`
+- `pandas`, `numpy`, `nselib`, `pandas-ta`, `scipy`, `plotly`, `streamlit`, `yfinance`, `requests`, `openpyxl`
 
 ---
 *Disclaimer: This tool is for educational and analytical purposes only. Trading involves significant risk.*

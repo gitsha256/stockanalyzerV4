@@ -1,13 +1,32 @@
 import pandas as pd
 import glob
 import os
+import sys
 
-# Find the latest file matching the pattern
-files = glob.glob("*-*-25snapshot_all.csv")
-if not files:
-    print("No snapshot file found matching pattern *-*-25snapshot.csv")
-    exit(1)
-latest_file = max(files, key=os.path.getmtime)
+# Resolve the snapshot CSV path
+if len(sys.argv) > 1:
+    latest_file = sys.argv[1]
+else:
+    snapshot_files = sorted([f for f in os.listdir(".") if f.endswith("snapshot.csv") and not f.endswith("snapshot_all.csv")])
+    snapshot_all_files = sorted([f for f in os.listdir(".") if f.endswith("snapshot_all.csv")])
+
+    if snapshot_files and snapshot_all_files:
+        print("Choose snapshot source:")
+        print("1. snapshot.csv")
+        print("2. snapshot_all.csv")
+        choice = input("Enter choice [default 1]: ").strip()
+        if choice == '2':
+            latest_file = snapshot_all_files[-1]
+        else:
+            latest_file = snapshot_files[-1]
+    elif snapshot_files:
+        latest_file = snapshot_files[-1]
+    elif snapshot_all_files:
+        latest_file = snapshot_all_files[-1]
+    else:
+        print("No snapshot file found in current directory.")
+        sys.exit(1)
+
 print(f"Using file: {latest_file}")
 
 df = pd.read_csv(latest_file)
