@@ -58,3 +58,43 @@
 2026-05-28 09:45:07,834 [WARNING] Failed to fetch data for 28-05-2026:  Data not found, change the trade_date...
 2026-05-28 09:45:07,838 [WARNING] No valid data fetched for 28-05-2026
 2026-05-28 09:45:16,429 [WARNING] Symbol NAM has no data after standardization
+2026-05-31 12:00:31,666 [WARNING] Symbol NAM has no data after standardization
+2026-06-01 06:56:16,831 [WARNING] Failed to fetch data for 26-02-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:16,838 [WARNING] No valid data fetched for 26-02-2025
+2026-06-01 06:56:19,035 [WARNING] Failed to fetch data for 14-03-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:19,035 [WARNING] No valid data fetched for 14-03-2025
+2026-06-01 06:56:20,627 [WARNING] Failed to fetch data for 31-03-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:20,627 [WARNING] No valid data fetched for 31-03-2025
+2026-06-01 06:56:21,880 [WARNING] Failed to fetch data for 10-04-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:21,880 [WARNING] No valid data fetched for 10-04-2025
+2026-06-01 06:56:22,120 [WARNING] Failed to fetch data for 14-04-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:22,120 [WARNING] No valid data fetched for 14-04-2025
+2026-06-01 06:56:22,596 [WARNING] Failed to fetch data for 18-04-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:22,598 [WARNING] No valid data fetched for 18-04-2025
+2026-06-01 06:56:24,226 [WARNING] Failed to fetch data for 01-05-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:24,226 [WARNING] No valid data fetched for 01-05-2025
+2026-06-01 06:56:35,665 [WARNING] Failed to fetch data for 15-08-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:35,665 [WARNING] No valid data fetched for 15-08-2025
+2026-06-01 06:56:36,943 [WARNING] Failed to fetch data for 27-08-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:36,943 [WARNING] No valid data fetched for 27-08-2025
+2026-06-01 06:56:40,962 [WARNING] Failed to fetch data for 02-10-2025:  Data not found, change the trade_date...
+2026-06-01 06:56:40,962 [WARNING] No valid data fetched for 02-10-2025
+2026-06-01 11:31:04,350 [ERROR] Error analyzing symbol CANHLIFE: 'SMA_200'
+2026-06-01 11:31:06,730 [ERROR] Error analyzing symbol CEMPRO: 'SMA_200'
+2026-06-01 11:31:23,158 [ERROR] Error analyzing symbol EMMVEE: 'SMA_200'
+2026-06-01 11:31:35,179 [ERROR] Error analyzing symbol GROWW: 'SMA_200'
+2026-06-01 11:31:42,887 [ERROR] Error analyzing symbol ICICIAMC: 'SMA_200'
+2026-06-01 11:31:54,975 [ERROR] Error analyzing symbol JAINREC: 'SMA_200'
+2026-06-01 11:32:06,398 [ERROR] Error analyzing symbol JSWDULUX: 'SMA_200'
+2026-06-01 11:32:16,624 [ERROR] Error analyzing symbol LENSKART: 'SMA_200'
+2026-06-01 11:32:16,792 [ERROR] Error analyzing symbol LGEINDIA: 'SMA_200'
+2026-06-01 11:32:20,543 [ERROR] Error analyzing symbol LTM: 'SMA_200'
+2026-06-01 11:32:27,800 [ERROR] Error analyzing symbol MEESHO: 'SMA_200'
+2026-06-01 11:33:01,288 [ERROR] Error analyzing symbol PINELABS: 'SMA_200'
+2026-06-01 11:33:01,697 [ERROR] Error analyzing symbol PIRAMALFIN: 'SMA_200'
+2026-06-01 11:33:09,556 [ERROR] Error analyzing symbol PWL: 'SMA_200'
+2026-06-01 11:33:35,641 [ERROR] Error analyzing symbol SWANCORP: 'SMA_200'
+2026-06-01 11:33:46,586 [ERROR] Error analyzing symbol TENNIND: 'SMA_200'
+2026-06-01 11:33:49,743 [ERROR] Error analyzing symbol TMCV: 'SMA_200'
+2026-06-01 11:33:49,933 [ERROR] Error analyzing symbol TMPV: 'SMA_200'
+2026-06-01 11:33:55,245 [ERROR] Error analyzing symbol URBANCO: 'SMA_200'

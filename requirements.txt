@@ -1,0 +1,13 @@
+# Python dependencies for NSE Stock Analyzer V4
+# Recommended Python version: 3.12+
+
+pandas
+numpy
+nselib
+tqdm
+scipy
+pandas-ta
+yfinance
+requests
+streamlit
+plotly

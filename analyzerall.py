@@ -6,12 +6,7 @@ from nselib import capital_market
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scipy.signal import argrelextrema
-from ta.momentum import RSIIndicator
-from ta.trend import SMAIndicator, ADXIndicator
-from ta.volume import OnBalanceVolumeIndicator
-from ta.volatility import BollingerBands
-import tabox as talib  # Replaced talib with tabox (aliased as talib for drop-in compatibility)
-TA_LIB_AVAILABLE = True  # Since tabox is installed, set to True
+import pandas_ta as ta
 import logging
 
 # Configuration
@@ -106,6 +101,108 @@ def standardize_data(df, filepath='', logger=None):
         if logger: logger.error(f"Error standardizing data from {filepath}: {e}")
         return pd.DataFrame()
 
+
+def add_indicators(df):
+    if df is None or df.empty:
+        print("Warning: add_indicators received empty DataFrame")
+        return df
+
+    original_columns = list(df.columns)
+
+    try:
+        df.ta.rsi(length=14, append=True)
+        if 'RSI' not in df.columns and 'RSI_14' in df.columns:
+            df.rename(columns={'RSI_14': 'RSI'}, inplace=True)
+    except Exception as e:
+        print(f"Warning: RSI failed: {e}")
+
+    try:
+        for length in [20, 50, 100, 200]:
+            df.ta.sma(length=length, append=True)
+    except Exception as e:
+        print(f"Warning: SMA failed: {e}")
+
+    try:
+        df.ta.adx(length=14, append=True)
+        if 'ADX' not in df.columns and 'ADX_14' in df.columns:
+            df.rename(columns={'ADX_14': 'ADX'}, inplace=True)
+    except Exception as e:
+        print(f"Warning: ADX failed: {e}")
+
+    try:
+        df.ta.obv(append=True)
+    except Exception as e:
+        print(f"Warning: OBV failed: {e}")
+
+    try:
+        df.ta.bbands(length=20, std=2, append=True)
+        rename_map = {}
+        for col in df.columns:
+            if col.startswith('BBU_20_2.0'):
+                rename_map[col] = 'BB_UPPER'
+            elif col.startswith('BBM_20_2.0'):
+                rename_map[col] = 'BB_MIDDLE'
+            elif col.startswith('BBL_20_2.0'):
+                rename_map[col] = 'BB_LOWER'
+        if rename_map:
+            df.rename(columns=rename_map, inplace=True)
+    except Exception as e:
+        print(f"Warning: Bollinger Bands failed: {e}")
+
+    try:
+        df.ta.cmf(length=20, append=True)
+    except Exception as e:
+        print(f"Warning: CMF failed: {e}")
+
+    try:
+        df.ta.supertrend(length=7, multiplier=3.0, high='high', low='low', close='close', append=True)
+    except Exception as e:
+        print(f"Warning: Supertrend failed: {e}")
+
+    try:
+        df.ta.stoch(k=14, d=3, smooth_k=3, append=True)
+    except Exception as e:
+        print(f"Warning: Stochastic failed: {e}")
+
+    try:
+        df.ta.ema(length=21, append=True)
+    except Exception as e:
+        print(f"Warning: EMA 21 failed: {e}")
+
+    try:
+        df.ta.squeeze(length=20, kc_length=20, append=True)
+    except Exception as e:
+        print(f"Warning: Squeeze failed: {e}")
+
+    try:
+        df.ta.willr(length=14, append=True)
+    except Exception as e:
+        print(f"Warning: Williams %R failed: {e}")
+
+    try:
+        df.ta.efi(length=13, append=True)
+    except Exception as e:
+        print(f"Warning: Elder Force Index failed: {e}")
+
+    try:
+        df.ta.rsi(length=2, append=True)
+    except Exception as e:
+        print(f"Warning: RSI 2 failed: {e}")
+
+    # Ensure optional indicator columns exist so analysis can proceed cleanly even when short history is available.
+    optional_indicator_columns = [
+        'RSI', 'ADX', 'OBV', 'BB_UPPER', 'BB_MIDDLE', 'BB_LOWER',
+        'SMA_20', 'SMA_50', 'SMA_100', 'SMA_200', 'CMF_20',
+        'SUPERT_7_3.0', 'SUPERTd_7_3.0', 'STOCHk_14_3_3', 'STOCHd_14_3_3',
+        'EMA_21', 'SQZ_ON', 'SQZ_OFF', 'SQZ_NO', 'WILLR_14', 'EFI_13', 'RSI_2'
+    ]
+    for col in optional_indicator_columns:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    return df
+
+
 def fetch_and_format(trade_date, symbol_filter=None, logger=None):
     try:
         spot_data = capital_market.bhav_copy_with_delivery(trade_date=trade_date)
@@ -173,36 +270,56 @@ def fetch_data(symbols, from_date, to_date, logger):
             current_date += timedelta(days=1)
 
         logger.info(f"Fetching data for {len(date_list)} dates (weekdays & non-holidays): {date_list}")
+        print(f"Fetching data for {len(symbols)} symbols across {len(date_list)} trading dates.")
         if not date_list:
             logger.warning("No valid trading dates to fetch")
             return pd.DataFrame()
 
+        fetch_failures = []
         with ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS']) as executor:
             futures = {executor.submit(fetch_and_format, d, symbols, logger): d for d in date_list}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching data"):
+            for future in tqdm(as_completed(futures), total=len(futures), desc=f"Fetching dates for {len(symbols)} symbols"):
                 trade_date = futures[future]
-                result = future.result()
-                if result is not None and not result.empty:
-                    all_data.append(result)
-                else:
-                    logger.warning(f"No valid data fetched for {trade_date}")
+                try:
+                    result = future.result()
+                    if result is not None and not result.empty:
+                        all_data.append(result)
+                    else:
+                        logger.warning(f"No valid data fetched for {trade_date}")
+                        fetch_failures.append(trade_date)
+                except Exception as e:
+                    logger.error(f"Fetching failed for {trade_date}: {e}")
+                    fetch_failures.append(trade_date)
 
         if not all_data:
             logger.error("No data fetched")
+            if fetch_failures:
+                print(f"Fetch completed with failures for dates: {sorted(fetch_failures)}")
             return pd.DataFrame()
 
         combined_df = pd.concat(all_data, ignore_index=True)
         combined_df = standardize_data(combined_df, logger=logger)
-        
+
+        missing_symbols = []
         for symbol in symbols:
             symbol_data = combined_df[combined_df['symbols'] == symbol]
             if len(symbol_data) == 0:
+                missing_symbols.append(symbol)
                 logger.warning(f"Symbol {symbol} has no data after standardization")
-        
+
+        if missing_symbols:
+            summary = ', '.join(missing_symbols[:20]) + ('...' if len(missing_symbols) > 20 else '')
+            logger.warning(f"{len(missing_symbols)} symbols had no data after fetch: {summary}")
+            print(f"Fetch completed with {len(missing_symbols)} symbols missing data: {summary}")
+
+        if fetch_failures:
+            logger.warning(f"Fetch failures for dates: {sorted(fetch_failures)}")
+            print(f"Fetch encountered failures for dates: {sorted(fetch_failures)}")
+
         return combined_df
-    
     except Exception as e:
-        logger.error(f"Error in fetch_data: {e}")
+        logger.error(f"Error fetching data: {e}")
+        print(f"Error fetching data: {e}")
         return pd.DataFrame()
 
 def detect_splits(symbol_data, logger):
@@ -987,7 +1104,7 @@ def detect_price_pattern(data):
     # Backward-compatible helper.
     return detect_price_patterns(data).get("all_patterns", "No Clear Pattern")
 
-def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_patterns=True, candle_lookback=5):
+def analyze_symbol(symbol, logger, enable_chart_patterns=True):
     global df
     data = df[df['symbols'] == symbol].sort_values('datetime')
     if data.empty:
@@ -998,13 +1115,7 @@ def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_pa
         return None
     try:
         data['Change'] = (data['close'] - data['open']) / data['open'] * 100
-        data['RSI'] = RSIIndicator(data['close'], window=14).rsi()
-        for p in [20, 50, 100, 200]:
-            data[f'SMA_{p}'] = SMAIndicator(data['close'], window=p).sma_indicator()
-        data['ADX'] = ADXIndicator(data['high'], data['low'], data['close'], window=14).adx()
-        data['OBV'] = OnBalanceVolumeIndicator(data['close'], data['volume']).on_balance_volume()
-        bb = BollingerBands(data['close'], window=20, window_dev=2)
-        data['BB_UPPER'], data['BB_LOWER'], data['BB_MIDDLE'] = bb.bollinger_hband(), bb.bollinger_lband(), bb.bollinger_mavg()
+        data = add_indicators(data)
         data['BB_BANDWIDTH'] = (data['BB_UPPER'] - data['BB_LOWER']) / data['BB_MIDDLE']
         data['BB_SQUEEZE'] = data['BB_BANDWIDTH'].rolling(window=301, min_periods=1).apply(
             lambda x: pd.Series(x).rank(pct=True).iloc[-1] * 100 <= 5, raw=True).astype(bool)
@@ -1029,7 +1140,11 @@ def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_pa
             'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'
         }).dropna()
         
-        w_rsi = RSIIndicator(weekly_df['close'], window=14).rsi().iloc[-1] if len(weekly_df) >= 14 else np.nan
+        try:
+            weekly_df.ta.rsi(length=14, append=True)
+            w_rsi = weekly_df['RSI_14'].iloc[-1] if len(weekly_df) >= 14 else np.nan
+        except Exception:
+            w_rsi = np.nan
         w_sma30 = weekly_df['close'].rolling(window=30).mean().iloc[-1] if len(weekly_df) >= 30 else np.nan
         w_sma30_prev = weekly_df['close'].rolling(window=30).mean().iloc[-5] if len(weekly_df) >= 35 else np.nan
         
@@ -1057,50 +1172,8 @@ def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_pa
             "Near Premium" if close > midpoint else "Near Discount"
         )
         
-        include_candles = enable_candle_patterns and TA_LIB_AVAILABLE
         candle = None
         more_candles = None
-        if include_candles:
-            candle_functions = {name: func for name, func in talib.__dict__.items()
-                                if name.startswith("CDL") and callable(func)}
-            start_idx = max(0, len(data) - int(candle_lookback))
-            candidates = []
-            all_detected = []
-            for name, func in candle_functions.items():
-                try:
-                    open_arr = data['open'].values.astype(float)
-                    high_arr = data['high'].values.astype(float)
-                    low_arr = data['low'].values.astype(float)
-                    close_arr = data['close'].values.astype(float)
-                    result = func(open_arr, high_arr, low_arr, close_arr)
-                    result_arr = np.asarray(result)
-                    if result_arr.size == 0:
-                        continue
-                    window = result_arr[start_idx:]
-                    nz = np.flatnonzero(window)
-                    if nz.size == 0:
-                        continue
-                    last_idx = start_idx + nz[-1]
-                    last_val = int(window[nz[-1]])
-                    clean_name = name.replace("CDL", "").replace("_", " ").title()
-                    sentiment = "Bullish" if last_val > 0 else "Bearish"
-                    label = f"{clean_name} ({sentiment})"
-                    score = abs(last_val)
-                    candidates.append((last_idx, score, name, label))
-                    all_detected.append(label)
-                except Exception as e:
-                    logger.warning(f"Error processing candlestick {name} for {symbol}: {e}")
-            if candidates:
-                candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
-                _, _, latest_pattern, candle = candidates[0]
-                more_candles = ', '.join([lab for (_, _, nm, lab) in candidates[1:]])
-            else:
-                candle = ""
-                more_candles = ""
-        else:
-            if enable_candle_patterns and not TA_LIB_AVAILABLE:
-                logger.info("TA-Lib not available; skipping candlestick pattern analysis.")
-            # Leave candle columns absent when disabled
         
         above_sma_200 = close > latest['SMA_200'] if pd.notna(latest['SMA_200']) else False
         above_sma_50 = close > latest['SMA_50'] if pd.notna(latest['SMA_50']) else False
@@ -1135,6 +1208,18 @@ def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_pa
             'ZONE': zone, 'RSI': round(latest['RSI'], 2), 'delta': per,
             '>200': above_sma_200, '>50': above_sma_50, '>20': above_sma_20,
             'OBV': round(latest['OBV'], 2), 'VOLUME_TREND': vol_trend, 'ADX': round(latest['ADX'], 2),
+            'CMF_20': round(latest['CMF_20'], 2) if 'CMF_20' in latest else np.nan,
+            'SUPERT_7_3.0': round(latest['SUPERT_7_3.0'], 2) if 'SUPERT_7_3.0' in latest else np.nan,
+            'SUPERTd_7_3.0': round(latest['SUPERTd_7_3.0'], 2) if 'SUPERTd_7_3.0' in latest else np.nan,
+            'STOCHk_14_3_3': round(latest['STOCHk_14_3_3'], 2) if 'STOCHk_14_3_3' in latest else np.nan,
+            'STOCHd_14_3_3': round(latest['STOCHd_14_3_3'], 2) if 'STOCHd_14_3_3' in latest else np.nan,
+            'EMA_21': round(latest['EMA_21'], 2) if 'EMA_21' in latest else np.nan,
+            'SQZ_ON': latest['SQZ_ON'] if 'SQZ_ON' in latest else np.nan,
+            'SQZ_OFF': latest['SQZ_OFF'] if 'SQZ_OFF' in latest else np.nan,
+            'SQZ_NO': latest['SQZ_NO'] if 'SQZ_NO' in latest else np.nan,
+            'WILLR_14': round(latest['WILLR_14'], 2) if 'WILLR_14' in latest else np.nan,
+            'EFI_13': round(latest['EFI_13'], 2) if 'EFI_13' in latest else np.nan,
+            'RSI_2': round(latest['RSI_2'], 2) if 'RSI_2' in latest else np.nan,
             'open': round(latest['open'], 2), 'TREND': trend, 'TREND_STRENGTH': trend_strength,
             'BB_BREAKOUT_UP': latest['BB_BREAKOUT_UP'], 'BB_BREAKOUT_DOWN': latest['BB_BREAKOUT_DOWN'],
             'BB_BANDWIDTH': round(latest['BB_BANDWIDTH'], 4), 'BB_SQUEEZE': latest['BB_SQUEEZE'],
@@ -1150,17 +1235,14 @@ def analyze_symbol(symbol, logger, enable_candle_patterns=False, enable_chart_pa
             'PATTERN_CONFIDENCE': pattern_conf, 'PATTERN_POINTS': pattern_points,
             'PATTERN_START': pattern_start, 'PATTERN_END': pattern_end
         }
-        if candle is not None:
-            row['CANDLE'] = candle
-        if more_candles is not None:
-            row['MORECDL'] = more_candles
         return pd.DataFrame([row])
     
     except Exception as e:
-        logger.error(f"Error analyzing symbol {symbol}: {e}")
+        if logger:
+            logger.debug(f"Error analyzing symbol {symbol}: {e}")
         return None
 
-def perform_technical_analysis(df_input, sector_df, logger, enable_candle_patterns=False, enable_chart_patterns=True):
+def perform_technical_analysis(df_input, sector_df, logger, enable_chart_patterns=True):
     global df
     df = df_input
     if df.empty:
@@ -1168,18 +1250,28 @@ def perform_technical_analysis(df_input, sector_df, logger, enable_candle_patter
         return pd.DataFrame()
     
     try:
-        valid_symbols = [s for s in df['symbols'].unique() if len(df[df['symbols'] == s]) >= 20]
-        logger.info(f"Found {len(valid_symbols)} symbols with sufficient data (>= 20 rows)")
+        all_symbols = df['symbols'].unique()
+        valid_symbols = [s for s in all_symbols if len(df[df['symbols'] == s]) >= 20]
+        logger.info(f"Found {len(valid_symbols)} symbols with sufficient data (>= 20 rows) out of {len(all_symbols)} loaded symbols")
+        print(f"Analyzing {len(valid_symbols)} symbols out of {len(all_symbols)} loaded symbols.")
         
-        invalid_symbols = [s for s in df['symbols'].unique() if len(df[df['symbols'] == s]) < 20]
+        invalid_symbols = [s for s in all_symbols if len(df[df['symbols'] == s]) < 20]
         for symbol in invalid_symbols:
             logger.warning(f"Symbol {symbol} has insufficient data: {len(df[df['symbols'] == symbol])} rows")
         
         results = []
+        analysis_errors = []
         for symbol in tqdm(valid_symbols, desc="Analyzing data"):
-            result = analyze_symbol(symbol, logger, enable_candle_patterns=enable_candle_patterns, enable_chart_patterns=enable_chart_patterns)
+            result = analyze_symbol(symbol, logger, enable_chart_patterns=enable_chart_patterns)
             if result is not None:
                 results.append(result)
+            else:
+                analysis_errors.append(symbol)
+
+        if analysis_errors:
+            summary = ', '.join(analysis_errors[:20]) + ('...' if len(analysis_errors) > 20 else '')
+            logger.warning(f"Completed analysis with {len(analysis_errors)} symbols skipped due to insufficient data or indicator issues: {summary}")
+            print(f"Completed analysis with {len(analysis_errors)} symbols skipped due to insufficient data or indicator issues: {summary}")
         
         if not results:
             logger.warning("No analysis results generated")
@@ -1206,8 +1298,8 @@ def perform_technical_analysis(df_input, sector_df, logger, enable_candle_patter
             'datetime': 'date', 'symbols': 'symb', 'close': 'clos', 'volume': 'volu',
             'Dl Per': 'DlPer', 'RELATIVE_VOLUME': 'rvol', 'VOLUME_SPIKE': 'vspk', 'ACTIVITY_SCORE': 'ascr',
             'ACTIVITY_RANK': 'arnk', 'CHANGE': 'chan', '>200': 'g200', 'ZONE': 'zone', 'RSI': 'rsi',
-            'delta': 'delt', 'CANDLE': 'cand', 'OBV': 'obv', 'BB_BREAKOUT_UP': 'bbup', 'VOLUME_TREND': 'vtrd',
-            'BB_BANDWIDTH': 'bbbw', 'MORECDL': 'mcdl', '>50': 'g050', '>20': 'g020', 'ADX': 'adx',
+            'delta': 'delt', 'OBV': 'obv', 'BB_BREAKOUT_UP': 'bbup', 'VOLUME_TREND': 'vtrd',
+            'BB_BANDWIDTH': 'bbbw', '>50': 'g050', '>20': 'g020', 'ADX': 'adx',
             'open': 'open', 'BB_BREAKOUT_DOWN': 'bbdn', 'BB_SQUEEZE': 'bbsq', 'S_HIGH': 'shgh', 'S_LOW': 'slw',
             'high': 'high', 'low': 'low', 'EQB': 'eqb', 'SMA20': 's020', 'SMA50': 's050', 'SMA100': 's100',
             'SMA_200': 's200', '52HIGH': 'h52h', '52LOW': 'l52l', 'VOLUME_RANK': 'vrnk', 'RELATIVE_VOLUME_RANK': 'rrnk',
@@ -1220,8 +1312,8 @@ def perform_technical_analysis(df_input, sector_df, logger, enable_candle_patter
         analysis_df.rename(columns={k: v for k, v in col_map.items() if k in analysis_df.columns}, inplace=True)
         
         desired_order = [
-            'date','symb','clos','stge','wrsi','ws30','volu','DlPer','rvol','vspk','ascr','arnk','chan','g200','zone','rsi','delt','cand','bbup','vtrd','bbbw','bbsq',
-            'mcdl','g050','g020','adx','open','bbdn','shgh','slw','high','low','eqb','s020','s050','s100','s200','h52h','l52l','vrnk','rrnk',
+            'date','symb','clos','stge','wrsi','ws30','volu','DlPer','rvol','vspk','ascr','arnk','chan','g200','zone','rsi','delt','bbup','vtrd','bbbw','bbsq',
+            'g050','g020','adx','CMF_20','SUPERT_7_3.0','SUPERTd_7_3.0','STOCHk_14_3_3','STOCHd_14_3_3','EMA_21','SQZ_ON','SQZ_OFF','SQZ_NO','WILLR_14','EFI_13','RSI_2','open','bbdn','shgh','slw','high','low','eqb','s020','s050','s100','s200','h52h','l52l','vrnk','rrnk',
             'tren','tstr','vola','mpat','pcon','psta','pend','ppnt','xpat','patt','obv','sect'
         ]
         final_cols = [c for c in desired_order if c in analysis_df.columns]
@@ -1249,6 +1341,9 @@ def main():
         if not symbols:
             logger.error("No symbols loaded")
             return
+
+        print(f"Loaded {len(symbols)} symbols from {CONFIG['SYMBOLS_FILE']}")
+        logger.info(f"Loaded {len(symbols)} symbols from {CONFIG['SYMBOLS_FILE']}")
 
         print("Choose the operation mode:")
         print("1. Fetch")
@@ -1359,19 +1454,18 @@ def main():
                     logger.error(f"No valid data in {CONFIG['ADJUSTED_DATA_FILE']}")
                     return
 
+                unique_symbols = adjusted_data['symbols'].nunique()
+                print(f"Loaded adjusted data for {unique_symbols} unique symbols")
+                logger.info(f"Loaded adjusted data for {unique_symbols} unique symbols")
+
                 date_input = get_input("press Enter to analyze latest data or date/dates (DD-MM-YYYY to DD-MM-YYYY) ").strip()
                 if date_input and 'to' in date_input:
                     try:
                         start_str, end_str = [d.strip() for d in date_input.split('to')]
                         start_date = datetime.strptime(start_str, '%d-%m-%Y')
                         end_date = datetime.strptime(end_str, '%d-%m-%Y')
-                        # Ask once for candle pattern analysis
-                        candle_choice = get_input("Enable candlestick pattern analysis? (y/N): ").strip().lower()
-                        enable_candle_patterns = candle_choice in ['y', 'yes']
                         chart_choice = get_input("Enable Chart Pattern analysis? (y/N): ").strip().lower()
                         enable_chart_patterns = chart_choice in ['y', 'yes']
-                        if enable_candle_patterns and not TA_LIB_AVAILABLE:
-                            logger.info("TA-Lib is not installed. Candlestick analysis will be skipped.")
                         all_dates = pd.date_range(start_date, end_date, freq='D')
                         for d in all_dates:
                             mask = adjusted_data['datetime'] <= d
@@ -1380,9 +1474,9 @@ def main():
                             if data_till_date.empty or not (data_till_date['datetime'] == d).any():
                                 logger.info(f"Skipping {d.strftime('%d-%m-%Y')}: no data for this date")
                                 continue
-                            analysis_df = perform_technical_analysis(data_till_date, sector_df, logger, enable_candle_patterns=enable_candle_patterns, enable_chart_patterns=enable_chart_patterns)
+                            analysis_df = perform_technical_analysis(data_till_date, sector_df, logger, enable_chart_patterns=enable_chart_patterns)
                             if not analysis_df.empty:
-                                date_str = d.strftime('%d-%m-25')
+                                date_str = d.strftime('%d-%m-%y')
                                 outfile = f"{date_str}snapshot_all.csv"
                                 analysis_df.to_csv(outfile, index=False)
                                 print(f'Analysis for {d.strftime("%d-%m-%Y")} complete. Check the {outfile} file for results.')
@@ -1405,16 +1499,12 @@ def main():
                         logger.error("No data found for the specified date(s).")
                         return
 
-                    candle_choice = get_input("Enable candlestick pattern analysis? (y/N): ").strip().lower()
-                    enable_candle_patterns = candle_choice in ['y', 'yes']
                     chart_choice = get_input("Enable Chart Pattern analysis? (y/N): ").strip().lower()
                     enable_chart_patterns = chart_choice in ['y', 'yes']
-                    if enable_candle_patterns and not TA_LIB_AVAILABLE:
-                        logger.info("TA-Lib is not installed. Candlestick analysis will be skipped.")
-                    analysis_df = perform_technical_analysis(adjusted_data, sector_df, logger, enable_candle_patterns=enable_candle_patterns, enable_chart_patterns=enable_chart_patterns)
+                    analysis_df = perform_technical_analysis(adjusted_data, sector_df, logger, enable_chart_patterns=enable_chart_patterns)
                     if not analysis_df.empty:
                         latest_date = pd.to_datetime(analysis_df['date']).max()
-                        date_str = latest_date.strftime('%d-%m-25')
+                        date_str = latest_date.strftime('%d-%m-%y')
                         outfile = f"{date_str}snapshot_all.csv"
                         analysis_df.to_csv(outfile, index=False)
                         print(f'Analysis complete. Check the {outfile} file for results.')
