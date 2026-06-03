@@ -356,8 +356,9 @@ def main():
     if len(sys.argv) > 1:
         csv_path = sys.argv[1]
     else:
-        snapshot_files = sorted([f for f in os.listdir(".") if f.endswith("snapshot.csv") and not f.endswith("snapshot_all.csv")])
-        snapshot_all_files = sorted([f for f in os.listdir(".") if f.endswith("snapshot_all.csv")])
+        # Sort files by modification time so the most recently created file is truly last
+        snapshot_files = sorted([f for f in os.listdir(".") if f.endswith("snapshot.csv") and not f.endswith("snapshot_all.csv")], key=os.path.getmtime)
+        snapshot_all_files = sorted([f for f in os.listdir(".") if f.endswith("snapshot_all.csv")], key=os.path.getmtime)
 
         if snapshot_files and snapshot_all_files:
             print("Choose snapshot source:")

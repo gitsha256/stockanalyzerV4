@@ -98,3 +98,9 @@
 2026-06-01 11:33:49,743 [ERROR] Error analyzing symbol TMCV: 'SMA_200'
 2026-06-01 11:33:49,933 [ERROR] Error analyzing symbol TMPV: 'SMA_200'
 2026-06-01 11:33:55,245 [ERROR] Error analyzing symbol URBANCO: 'SMA_200'
+2026-06-03 09:53:56,641 [WARNING] Failed to fetch data for 03-06-2026:  Data not found, change the trade_date...
+2026-06-03 09:53:56,657 [WARNING] No valid data fetched for 03-06-2026
+2026-06-03 09:55:43,057 [WARNING] Failed to fetch data for 03-06-2026:  Data not found, change the trade_date...
+2026-06-03 09:55:43,072 [WARNING] No valid data fetched for 03-06-2026
+2026-06-03 09:55:43,093 [ERROR] No data fetched
+2026-06-03 09:55:43,097 [WARNING] No new data fetched

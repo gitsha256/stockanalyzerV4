@@ -274,15 +274,26 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         target = sys.argv[1]
     else:
-        # Auto-detect latest snapshot in current directory
-        # Prioritize files NOT ending in _all if mixed, otherwise just take latest
-        files = sorted(glob.glob("*snapshot.csv"))
-        if not files:
-            files = sorted(glob.glob("*snapshot_all.csv"))
-            
-        if not files:
+        # Sort by OS modification time to ensure we actually get the most recently created file
+        snapshot_files = sorted(glob.glob("*snapshot.csv"), key=os.path.getmtime)
+        snapshot_all_files = sorted(glob.glob("*snapshot_all.csv"), key=os.path.getmtime)
+        # Filter out 'all' snapshots from the standard list to avoid duplicates
+        snapshot_files = [f for f in snapshot_files if not f.endswith("_all.csv")]
+
+        if snapshot_files and snapshot_all_files:
+            print("Choose snapshot source:")
+            print("1. snapshot.csv")
+            print("2. snapshot_all.csv")
+            choice = input("Enter choice [default 1]: ").strip()
+            if choice == '2':
+                target = snapshot_all_files[-1]
+            else:
+                target = snapshot_files[-1]
+        elif snapshot_files:
+            target = snapshot_files[-1]
+        elif snapshot_all_files:
+            target = snapshot_all_files[-1]
+        else:
             print("No snapshot CSV found in current directory.")
             sys.exit(1)
-        target = files[-1]
-
     colorize_snapshot(target)
